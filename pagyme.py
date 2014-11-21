@@ -57,7 +57,7 @@ def saveFrame(stimulus, filename='exemple', figpath='movie_frame'):
         filename = figpath + 'frame' + str(i) + '.jpg'
         saveSurface(stimulus[:, :, i, :], filename)
 
-def saveMovie(stimulus, filename, fps=50, verbose=False):
+def saveMovie(stimulus, filename, vext='.webm', fps=50, verbose=False):
     import tempfile
 
     if verbose: verb_ = ''
@@ -70,7 +70,11 @@ def saveMovie(stimulus, filename, fps=50, verbose=False):
         fname = os.path.join(tmpdir, 'frame%03d.png' % frame)
         files.append(fname)
         saveSurface(stimulus[:, :, frame, :], fname)
-    options = '-f webm -pix_fmt yuv420p -vcodec libvpx -qmax 12 -g ' + str(fps) + ' -r ' + str(fps) + ' -y '
-    cmd = 'ffmpeg -i '  + tmpdir + '/frame%03d.png ' + options + filename + '.webm' + verb_
+    if (vext == '.webm'):
+        options = '-f webm -pix_fmt yuv420p -vcodec libvpx -qmax 12 -g ' + str(fps) + ' -r ' + str(fps) + ' -y '
+        cmd = 'ffmpeg -i '  + tmpdir + '/frame%03d.png ' + options + filename + '.webm' + verb_
+    else:
+        options = '-delay 1 -loop 0 '
+        cmd = 'convert '  + tmpdir + '/frame*.png  ' + options + filename + vext + verb_
     os.system(cmd)
     remove_frames(tmpdir, files)
