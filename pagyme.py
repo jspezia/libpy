@@ -3,7 +3,7 @@ from pygame.locals import *
 from pygame import surfarray
 import sys, os
 
-def quit(event):
+def quit(event, exit=True):
     _continue = True
     if event.type == QUIT:
         _continue = False
@@ -11,13 +11,16 @@ def quit(event):
         _continue = False
     if _continue == False:
         pygame.quit()
+    if (exit == True and _continue == False):
         sys.exit()
     return(_continue)
 
-def show_stimulus(stimulus, name='toto', resizable=True):
+def show_stimulus(stimulus, name='toto', resizable=True, exit=True, wait=0.0):
     """
     stimulus is a 4 dimension numpy array: [height, weight, frame, RGB]
     """
+    from time import sleep
+
     h = stimulus.shape[0]
     w = stimulus.shape[1]
     f = stimulus.shape[2]
@@ -35,8 +38,9 @@ def show_stimulus(stimulus, name='toto', resizable=True):
         screen.blit(surface, (0, 0))
         pygame.display.flip()
         event = pygame.event.poll()
-        looping = quit(event)
+        looping = quit(event, exit=exit)
         i += 1
+        sleep(wait)
 
 def remove_frames(tmpdir, files):
     for fname in files: os.remove(fname)
@@ -62,6 +66,10 @@ def saveMovie(stimulus, filename, vext='.webm', fps=50, verbose=False):
 
     if verbose: verb_ = ''
     else: verb_ = ' 2>/dev/null'
+    if (vext == '.mat'):
+        from scipy.io import savemat
+        savemat(filename + vext, {'stimulus', stimulus})
+        return
     tmpdir = tempfile.mkdtemp()
     files = []
     f = stimulus.shape[2]
@@ -73,8 +81,11 @@ def saveMovie(stimulus, filename, vext='.webm', fps=50, verbose=False):
     if (vext == '.webm'):
         options = '-f webm -pix_fmt yuv420p -vcodec libvpx -qmax 12 -g ' + str(fps) + ' -r ' + str(fps) + ' -y '
         cmd = 'ffmpeg -i '  + tmpdir + '/frame%03d.png ' + options + filename + '.webm' + verb_
-    else:
+    if (vext == '.gif'):
         options = '-delay 1 -loop 0 '
         cmd = 'convert '  + tmpdir + '/frame*.png  ' + options + filename + vext + verb_
+    else:
+        remove_frames(tmpdir, files)
+        return
     os.system(cmd)
     remove_frames(tmpdir, files)
